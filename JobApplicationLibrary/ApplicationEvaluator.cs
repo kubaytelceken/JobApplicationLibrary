@@ -23,10 +23,17 @@ namespace JobApplicationLibrary
         public ApplicationResult Evaluate(JobApplication form)
         {
 
-            if(form.Applicant.Age < minAge)
+            if(form.Applicant is null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            if(form.Applicant?.Age < minAge)
             {
                 return ApplicationResult.AutoRejected;
             }
+
+            identityValidator.ValidationMode = form.Applicant.Age > 50 ? ValidationMode.Detailed : ValidationMode.Quick;
             
 
             if(identityValidator.CountryDataProvider.CountryData.Country != "TURKEY")

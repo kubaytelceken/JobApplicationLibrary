@@ -3,6 +3,7 @@ using static JobApplicationLibrary.ApplicationEvaluator;
 using NUnit.Framework;
 using Moq;
 using JobApplicationLibrary.Services;
+using FluentAssertions;
 
 namespace JobApplicationLibrary.UnitTest
 {
@@ -24,7 +25,8 @@ namespace JobApplicationLibrary.UnitTest
             //Action
             var appResult = applicationEvaluator.Evaluate(form);
             //Assert
-            Assert.That(appResult, Is.EqualTo(ApplicationResult.AutoRejected));
+            //Assert.That(appResult, Is.EqualTo(ApplicationResult.AutoRejected));
+            appResult.Should().Be(ApplicationResult.AutoRejected);
         }
 
 
@@ -37,6 +39,7 @@ namespace JobApplicationLibrary.UnitTest
             var mockValidator = new Mock<IIdentityValidator>();
             mockValidator.DefaultValue = DefaultValue.Mock;
             mockValidator.Setup(i => i.CountryDataProvider.CountryData.Country).Returns("TURKEY");
+
             mockValidator.Setup(i => i.IsValid(It.IsAny<string>())).Returns(true);
             ApplicationEvaluator applicationEvaluator = new ApplicationEvaluator(mockValidator.Object);
             var form = new JobApplication()
@@ -51,7 +54,8 @@ namespace JobApplicationLibrary.UnitTest
             //Action
             var appResult = applicationEvaluator.Evaluate(form);
             //Assert
-            Assert.That(appResult, Is.EqualTo(ApplicationResult.AutoRejected));
+            //Assert.That(appResult, Is.EqualTo(ApplicationResult.AutoRejected));
+            appResult.Should().Be(ApplicationResult.AutoRejected);
         }
 
         [Test]
@@ -75,7 +79,8 @@ namespace JobApplicationLibrary.UnitTest
             //Action
             var appResult = applicationEvaluator.Evaluate(form);
             //Assert
-            Assert.That(appResult, Is.EqualTo(ApplicationResult.AutoAccepted));
+           //Assert.That(appResult, Is.EqualTo(ApplicationResult.AutoAccepted));
+            appResult.Should().Be(ApplicationResult.AutoAccepted);
         }
 
         [Test]
@@ -100,7 +105,8 @@ namespace JobApplicationLibrary.UnitTest
             //Action
             var appResult = applicationEvaluator.Evaluate(form);
             //Assert
-            Assert.That(appResult, Is.EqualTo(ApplicationResult.TransferredToHR));
+            //Assert.That(appResult, Is.EqualTo(ApplicationResult.TransferredToHR));
+            appResult.Should().Be(ApplicationResult.TransferredToHR);
         }
 
         [Test]
@@ -121,9 +127,79 @@ namespace JobApplicationLibrary.UnitTest
             //Action
             var appResult = applicationEvaluator.Evaluate(form);
             //Assert
-            Assert.That(appResult, Is.EqualTo(ApplicationResult.TransferredToCTO));
+         //   Assert.That(appResult, Is.EqualTo(ApplicationResult.TransferredToCTO));
+            appResult.Should().Be(ApplicationResult.TransferredToCTO);
         }
 
+
+
+        [Test]
+        public void Application_WithOver50_ValidationModeToDetailed()
+        {
+            //Arrange
+            var mockValidator = new Mock<IIdentityValidator>();
+            mockValidator.SetupAllProperties();
+            //mockValidator.Setup(i => i.ValidationMode);
+            mockValidator.Setup(i => i.CountryDataProvider.CountryData.Country).Returns("SPAIN");
+            
+            ApplicationEvaluator applicationEvaluator = new ApplicationEvaluator(mockValidator.Object);
+            var form = new JobApplication()
+            {
+                Applicant = new Applicant()
+                {
+                    Age = 51
+                },
+                OfficeLocation = "ýstanb"
+            };
+            //Action
+            var appResult = applicationEvaluator.Evaluate(form);
+            //Assert
+            //Assert.That(ValidationMode.Detailed, Is.EqualTo(mockValidator.Object.ValidationMode));
+
+            mockValidator.Object.ValidationMode.Should().Be(ValidationMode.Detailed);
+        }
+
+
+
+        [Test]
+        public void Application_WithNullApplicant_ThrowsArgumentNullException()
+        {
+            var mockValidator = new Mock<IIdentityValidator>();
+
+            ApplicationEvaluator applicationEvaluator = new ApplicationEvaluator(mockValidator.Object);
+            var form = new JobApplication();
+            //Action
+            Action appResultAction = () => applicationEvaluator.Evaluate(form);
+            //Assert
+
+            appResultAction.Should().Throw<ArgumentNullException>();
+        }
+
+
+        [Test]  
+        public void Application_WithDefaultValue_IsValidCalled()
+        {
+            //Arrange
+            var mockValidator = new Mock<IIdentityValidator>();
+            mockValidator.DefaultValue = DefaultValue.Mock;
+            mockValidator.Setup(i => i.CountryDataProvider.CountryData.Country).Returns("TURKEY");
+          
+            ApplicationEvaluator applicationEvaluator = new ApplicationEvaluator(mockValidator.Object);
+            var form = new JobApplication()
+            {
+                Applicant = new Applicant()
+                {
+                    Age = 19,
+                    IdentityNumber = "1234"
+                },
+                OfficeLocation = "ýstanb"
+            };
+            //Action
+            var appResult = applicationEvaluator.Evaluate(form);
+            //Assert
+
+            mockValidator.Verify(i => i.IsValid("123"),"IsValidMethod should be called with 123");
+        }
 
     }
 }
